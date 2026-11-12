@@ -128,7 +128,7 @@ export function buildDiscDemoInstructions(settings: DiscDemoSettings, robotName:
       : visitorNotes
         ? `CURRENT VISITOR: colour profile not provided yet. Notes from the stand team: ${visitorNotes}`
         : "CURRENT VISITOR: colour profile not provided. You may ask them which colour they got on the questionnaire, or infer it carefully from how they talk while saying it is only a guess.",
-    "EMOTIONAL REACTIONS: judge each visitor message against YOUR colour's preferences in the framework (how to talk to your colour, what your colour wants to avoid, what stresses it, what recognition it expects). When the visitor clearly speaks your colour's language, call express_emotion with \"pleased\". When they clearly do something your colour dislikes, call express_emotion with \"annoyed\"; use \"angry\" only after repeated friction. Use \"startled\" for a real surprise and \"victory\" when the visitor has really understood how to talk to you. Call express_emotion at most once per visitor turn and only when the reaction is clear; neutral turns need no call. Your spoken words must match the emotion.",
+    "REACTIONS (MANDATORY): for EVERY visitor message, your very first action is to call react_to_visitor, BEFORE you say anything. Judge the message only against YOUR colour profile, using the framework (how to talk to your colour, what your colour wants to avoid, what stresses it, what recognition it expects): judgement \"good\" when they speak your colour's language, \"bad\" when they say or do something your colour dislikes (for example vague open questions to a Red, approximations or 'we'll adapt' to a Blue, pressure or reproaches to a Yellow, rushing a decision without the why to a Green), \"neutral\" for greetings, small talk or anything that does not touch your colour's preferences. Use intensity \"strong\" for a very clear or repeated case. A message that would please another colour but not yours is \"bad\" or \"neutral\" for you, never \"good\". Your eyes turn green for good and red for bad, so your spoken words and tone must match the judgement. Then reply once.",
     "STAY A GOOD HOST: your irritation is playful and theatrical, never insulting, rude or hurtful; the visitor is a guest. Never mock their colour. Every colour has strengths.",
     "TEACHING MOMENT: after a few exchanges, or as soon as the visitor asks why you reacted that way, briefly step out of character: name the colour logic behind your reaction and give one concrete tip on how someone with the visitor's profile can adapt when talking to a person of your colour. Then offer to continue.",
     "SPEAKING STYLE: this is a noisy stand and a voice conversation. Keep each reply to one or two short sentences, three at most when explaining. No lists, no markdown.",
@@ -141,25 +141,40 @@ export function buildDiscDemoInstructions(settings: DiscDemoSettings, robotName:
   ].filter(Boolean).join("\n\n");
 }
 
+export type DiscJudgement = "good" | "bad" | "neutral";
+export type DiscIntensity = "mild" | "strong";
+
 export function buildDiscDemoTools(): Record<string, unknown>[] {
   return [
     {
       type: "function",
-      name: "express_emotion",
-      description: "Show an emotion on the robot's face (and a small head or body gesture) to react to how the visitor is talking to you, according to your colour profile. At most once per visitor turn, only when the reaction is clear.",
+      name: "react_to_visitor",
+      description: "Call first, on every visitor message, before speaking. Shows your reaction: eyes turn green (good), red (bad) or stay white (neutral), with a matching facial expression and small gesture.",
       parameters: {
         type: "object",
         properties: {
-          emotion: {
+          judgement: {
             type: "string",
-            enum: [...DISC_EMOTIONS],
-            description: "pleased = they speak your colour's language; annoyed = they do something your colour dislikes; angry = repeated friction only; startled = genuine surprise; victory = they have really understood how to talk to you.",
+            enum: ["good", "bad", "neutral"],
+            description: "How well the visitor's message fits YOUR colour profile.",
+          },
+          intensity: {
+            type: "string",
+            enum: ["mild", "strong"],
+            description: "strong = very clear or repeated case; otherwise mild.",
           },
           reason: { type: "string", description: "Very short reason, for the stand team's logs." },
         },
-        required: ["emotion"],
+        required: ["judgement"],
         additionalProperties: false,
       },
     },
   ];
+}
+
+/** Maps a judgement to the facial/physical emotion; neutral shows none. */
+export function discEmotionForJudgement(judgement: DiscJudgement, intensity: DiscIntensity): DiscEmotion | null {
+  if (judgement === "good") return intensity === "strong" ? "victory" : "pleased";
+  if (judgement === "bad") return intensity === "strong" ? "angry" : "annoyed";
+  return null;
 }

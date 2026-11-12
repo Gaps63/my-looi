@@ -12,7 +12,7 @@ import {
 } from "../openai/openai-api-key";
 import { useConversationStore } from "../store/conversation";
 import { useUserStore } from "../store/user";
-import { executeDiscEmotionTool } from "../disc/disc-reaction";
+import { DISC_TOOL_NAMES, executeDiscReactionTool } from "../disc/disc-reaction";
 import { getResponseLanguageName, isResponseLanguage } from "../language/response-language";
 import { captureExplicitLookHereStill } from "../vision/look-here";
 import { classifyOpenAiError, setOpenAiApiStatus } from "../openai/openai-api-status";
@@ -1044,8 +1044,8 @@ export class RealtimePcmConversationService {
     let output: Record<string, unknown>;
     try {
       const args = item.arguments ? JSON.parse(String(item.arguments)) : {};
-      if (name === "express_emotion") {
-        output = executeDiscEmotionTool(args);
+      if (DISC_TOOL_NAMES.has(name)) {
+        output = executeDiscReactionTool(name, args);
       } else if (name === "search_memory") {
         const query = String(args.query ?? "").trim();
         if (!query) throw new Error("query is required");

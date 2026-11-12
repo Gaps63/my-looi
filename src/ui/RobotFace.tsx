@@ -14,6 +14,7 @@ import { useConversationStore } from "@/src/store/conversation";
 import { looiTheme } from "@/src/ui/looi-theme";
 import { useUiText } from "@/src/i18n/use-ui-text";
 import { useCharacterReactionStore, type CharacterMood } from "@/src/character/character-reaction";
+import { DISC_EYE_COLORS, useDiscVerdictStore } from "@/src/disc/disc-verdict";
 import { recordDiagnosticEvent } from "@/src/diagnostics/diagnostic-log";
 import { useSocialAttentionStore } from "@/src/core/social-attention";
 
@@ -140,7 +141,11 @@ function ClassicRobotFace({
   const faceStyleId = useUserStore((state) => state.preferences.faceStyle);
   const facePaletteId = useUserStore((state) => state.preferences.facePalette);
   const faceStyle = FACE_STYLES[faceStyleId] ?? FACE_STYLES.classic;
-  const palette = FACE_PALETTES[facePaletteId] ?? FACE_PALETTES.cyan;
+  const basePalette = FACE_PALETTES[facePaletteId] ?? FACE_PALETTES.cyan;
+  // DISC demo: white eyes by default, green/red after the robot judges the visitor.
+  const discDemoEnabled = useUserStore((state) => state.preferences.discDemoEnabled);
+  const discVerdict = useDiscVerdictStore((state) => state.verdict);
+  const palette = discDemoEnabled ? { ...basePalette, ...DISC_EYE_COLORS[discVerdict] } : basePalette;
   const streamingText = useConversationStore((state) => state.streamingText);
   const realtimeReadiness = useConversationStore((state) => state.realtimeReadiness);
   const conversationMode = useUserStore((state) => state.preferences.conversationMode);
@@ -186,6 +191,7 @@ function ClassicRobotFace({
               ? t("face.speaking")
               : t("face.verifying");
   const characterReactionVisible = Boolean(characterMood) && (
+    discDemoEnabled ||
     voiceState === "sleeping" ||
     (isRealtimeConversationMode(conversationMode) && voiceState === "listening")
   );

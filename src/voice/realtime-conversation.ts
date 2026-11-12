@@ -14,7 +14,7 @@ import { mirrorSessionMessage, mirrorSessionTouch } from "../memory/memory-servi
 import { isMainScreenFocused } from "../core/main-screen-presence";
 import { useConversationStore } from "../store/conversation";
 import { isPcmRealtimeMode, useUserStore } from "../store/user";
-import { executeDiscEmotionTool } from "../disc/disc-reaction";
+import { DISC_TOOL_NAMES, executeDiscReactionTool } from "../disc/disc-reaction";
 import { getResponseLanguageName, isResponseLanguage } from "../language/response-language";
 import { kwsAudioFeeder } from "./kws-audio-feeder";
 import {
@@ -1474,8 +1474,8 @@ export class RealtimeConversationService {
     let output: Record<string, unknown>;
     try {
       const args = item.arguments ? JSON.parse(String(item.arguments)) : {};
-      if (name === "express_emotion") {
-        output = executeDiscEmotionTool(args);
+      if (DISC_TOOL_NAMES.has(name)) {
+        output = executeDiscReactionTool(name, args);
       } else if (name === "search_memory") {
         const query = String(args.query ?? "").trim();
         if (!query) throw new Error("query is required");

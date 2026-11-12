@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { useUserStore } from "../store/user";
@@ -9,6 +10,7 @@ import {
   DISC_TEXT_LIMITS,
   type DiscColor,
 } from "./disc-demo";
+import { resetDiscVerdict } from "./disc-verdict";
 
 const SWATCH: Record<DiscColor, string> = {
   red: "#E5484D",
@@ -53,6 +55,9 @@ export function DiscDemoSettingsSection() {
   const { preferences, updatePreferences } = useUserStore();
   const enabled = preferences.discDemoEnabled;
 
+  // Opening the settings (e.g. between two visitors) puts the eyes back to white.
+  useEffect(() => { resetDiscVerdict(); }, []);
+
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Démo DISC (salon)</Text>
@@ -62,7 +67,8 @@ export function DiscDemoSettingsSection() {
           <Text style={[styles.pill, enabled && styles.pillOn]}>{enabled ? "ACTIVÉ" : "DÉSACTIVÉ"}</Text>
         </Pressable>
         <Text style={styles.help}>
-          Activé : le robot joue le profil couleur choisi, réagit avec des émotions et n'utilise aucune mémoire personnelle.
+          Activé : le robot joue le profil couleur choisi et n'utilise aucune mémoire personnelle. Ses yeux sont blancs par défaut,
+          deviennent verts quand on lui parle comme sa couleur l'aime et rouges quand on dit ce que sa couleur n'aime pas (10 s).
           Les changements s'appliquent dès le retour sur l'écran du visage.
         </Text>
 
@@ -88,7 +94,10 @@ export function DiscDemoSettingsSection() {
               style={[styles.input, styles.multiline]}
             />
             <Pressable
-              onPress={() => updatePreferences({ discVisitorPrimary: null, discVisitorSecondary: null, discVisitorNotes: "" })}
+              onPress={() => {
+                updatePreferences({ discVisitorPrimary: null, discVisitorSecondary: null, discVisitorNotes: "" });
+                resetDiscVerdict();
+              }}
               style={styles.action}
             >
               <Text style={styles.actionText}>Nouveau visiteur (effacer le profil)</Text>
