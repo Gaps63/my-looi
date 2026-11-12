@@ -1,3 +1,4 @@
+import { toLocalCommandLanguage } from "../language/listening-language";
 import { BasePerceiver } from "../core/perceiver";
 import type { MemoryResult, UserIntent } from "../core/context-service";
 import { createObservation } from "../core/observation";
@@ -1102,7 +1103,7 @@ export class VoicePerceiver extends BasePerceiver {
     this.activeTurnId = turnId;
     recordDiagnosticEvent("runtime", "turn-created", {
       turnId,
-      listeningLanguage: userStore.preferences.listeningLanguage,
+      listeningLanguage: toLocalCommandLanguage(userStore.preferences.listeningLanguage),
       responseLanguage: userStore.preferences.language,
     });
     const wasFollowUpTurn = this.followUpTurn;
@@ -1228,7 +1229,7 @@ export class VoicePerceiver extends BasePerceiver {
         robotName: userStore.preferences.robotName,
         robotAddressAliases: userStore.preferences.robotAddressAliases,
         robotAddressRecognitionAliases: userStore.preferences.robotAddressRecognitionAliases,
-        listeningLanguage: userStore.preferences.listeningLanguage,
+        listeningLanguage: toLocalCommandLanguage(userStore.preferences.listeningLanguage),
         customVoiceCommands: userStore.preferences.customVoiceCommands,
       };
       const explicitRobotCommand = parseExplicitRobotCommand(rawTranscript, explicitCommandConfig);

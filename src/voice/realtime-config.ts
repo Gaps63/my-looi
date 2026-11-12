@@ -1,4 +1,5 @@
 import type { UserPreferences } from "../store/user";
+import { getResponseLanguageName, SUPPORTED_CONVERSATION_LANGUAGES } from "../language/response-language";
 import { DEFAULT_REALTIME_MODEL_ID, normalizeRealtimeModelId, supportsRealtimeReasoning } from "../openai/realtime-models";
 import {
   buildDiscDemoInstructions,
@@ -36,12 +37,8 @@ export function buildRealtimeInstructions(
   previousSummary?: string,
   memoryContext?: string
 ): string {
-  const responseLanguage = preferences.language === "uk"
-    ? "Ukrainian"
-    : preferences.language === "en" ? "English" : "Russian";
-  const inputLanguage = preferences.listeningLanguage === "uk"
-    ? "Ukrainian"
-    : preferences.listeningLanguage === "en" ? "English" : "Russian";
+  const responseLanguage = getResponseLanguageName(preferences.language);
+  const inputLanguage = getResponseLanguageName(preferences.listeningLanguage);
   const robotName = preferences.robotName?.trim() || "Луи";
   const speechGender = preferences.speechGender === "feminine" ? "feminine" : "masculine";
   const grammarInstruction = speechGender === "feminine"
@@ -64,7 +61,7 @@ export function buildRealtimeInstructions(
     `The app response-language setting is the default language for normal replies: ${responseLanguage}. Do not change the persistent language merely because the user happens to speak another language.`,
     `The expected input/listening language is ${inputLanguage}. Interpret ambiguous speech as ${inputLanguage}.`,
     "Language-learning requests are an explicit exception to the default reply language: if the user asks for a translation, pronunciation, correction, comparison, example, or asks you to say a specific phrase in another language, directly use that requested language for the requested content without changing persistent language settings. Keep any surrounding explanation in the default reply language unless the user asks otherwise.",
-    "If the user explicitly asks to switch or continue future replies/conversation in Russian, Ukrainian, or English, you MUST call set_language_preferences instead of merely promising to switch. For requests like 'let's speak English' or 'давай говорить по-английски', set both response_language and listening_language to that language. If the user explicitly asks only for your replies to change while they keep speaking their current language, change response_language and omit listening_language.",
+    "If the user explicitly asks to switch or continue future replies/conversation in Russian, Ukrainian, English, French or Arabic, you MUST call set_language_preferences instead of merely promising to switch. For requests like 'let's speak English' or 'давай говорить по-английски', set both response_language and listening_language to that language. If the user explicitly asks only for your replies to change while they keep speaking their current language, change response_language and omit listening_language.",
     "Never call set_language_preferences for a one-off translation, pronunciation, quoted phrase, or language example.",
     "Prefer one short spoken sentence; use two only when useful.",
     "Never claim you moved the wheels, turned the body, or entered deep sleep. Never claim you changed an app setting unless a provided tool actually changed that setting.",
@@ -110,12 +107,12 @@ function buildRealtimeTools(): Record<string, unknown>[] {
         properties: {
           response_language: {
             type: "string",
-            enum: ["ru", "uk", "en"],
+            enum: [...SUPPORTED_CONVERSATION_LANGUAGES],
             description: "Persistent language for LOOI's future replies.",
           },
           listening_language: {
             type: "string",
-            enum: ["ru", "uk", "en"],
+            enum: [...SUPPORTED_CONVERSATION_LANGUAGES],
             description: "Optional expected language for the user's future speech. Set it for a full conversation-language switch; omit it for reply-only switching.",
           },
         },
@@ -172,7 +169,7 @@ export function buildRealtimeSessionUpdate(
               : { language: preferences.listeningLanguage }),
             prompt: discDemo
               ? `A trade-show visitor is talking to a small robot named ${discDemoRobotName(preferences.robotName)} (also LOOI or Robot) about colour profiles: Red, Blue, Yellow, Green, DISC. The visitor may speak English, French, Arabic or another language.`
-              : `The user is speaking ${preferences.listeningLanguage === "uk" ? "Ukrainian" : preferences.listeningLanguage === "en" ? "English" : "Russian"}. Robot names/addresses and likely STT variants may include ${[preferences.robotName?.trim() || "Луи", ...(Array.isArray(preferences.robotAddressAliases) ? preferences.robotAddressAliases : []), ...(Array.isArray(preferences.robotAddressRecognitionAliases) ? preferences.robotAddressRecognitionAliases : []), "LOOI", "Луи", "Луї", "Бобик", "Макс", "Max", "Робот", "Robot"].join(", ")}. These tokens are vocative robot addresses, not evidence of the human user's name. Transcribe them as robot names/addresses and do not reinterpret them as the user's personal name.`,
+              : `The user is speaking ${getResponseLanguageName(preferences.listeningLanguage)}. Robot names/addresses and likely STT variants may include ${[preferences.robotName?.trim() || "Луи", ...(Array.isArray(preferences.robotAddressAliases) ? preferences.robotAddressAliases : []), ...(Array.isArray(preferences.robotAddressRecognitionAliases) ? preferences.robotAddressRecognitionAliases : []), "LOOI", "Луи", "Луї", "Бобик", "Макс", "Max", "Робот", "Robot"].join(", ")}. These tokens are vocative robot addresses, not evidence of the human user's name. Transcribe them as robot names/addresses and do not reinterpret them as the user's personal name.`,
           },
           turn_detection: {
             type: "server_vad",

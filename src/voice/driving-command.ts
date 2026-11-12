@@ -25,6 +25,9 @@ function stripFillers(text: string, language: ListeningLanguage): string {
     ru: /^(?:(?:ну|давай|да|ага|эй|ой|пожалуйста|быстро|сейчас|уже|робот|луи|луй|макс|max|уи|уй)\s+)*/u,
     uk: /^(?:(?:ну|давай|так|ага|ей|ой|будь\s+ласка|швидко|зараз|вже|робот|луї|луі|макс|max)\s+)*/u,
     en: /^(?:(?:well|okay|ok|hey|please|quickly|now|already|robot|looi|louie|max)\s+)*/u,
+    // French/Arabic speakers use the English offline command vocabulary.
+    fr: /^(?:(?:well|okay|ok|hey|please|quickly|now|already|robot|looi|louie|max|bon|allez|vas-y|s'il\s+te\s+pla[iî]t|maintenant)\s+)*/u,
+    ar: /^(?:(?:well|okay|ok|hey|please|quickly|now|already|robot|looi|louie|max)\s+)*/u,
   };
   return text.replace(fillers[language], "").trim();
 }

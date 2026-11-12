@@ -1,3 +1,4 @@
+import { toLocalCommandLanguage } from "../language/listening-language";
 import type { CustomVoiceCommandPhrase, UserPreferences } from "../store/user";
 import { getExplicitRobotAddressedCommand } from "./explicit-robot-command";
 
@@ -80,7 +81,7 @@ export function parseRealtimeVisualCommand(
     robotName: preferenceSnapshot.robotName,
     robotAddressAliases: preferenceSnapshot.robotAddressAliases,
     robotAddressRecognitionAliases: preferenceSnapshot.robotAddressRecognitionAliases,
-    listeningLanguage: preferenceSnapshot.listeningLanguage,
+    listeningLanguage: toLocalCommandLanguage(preferenceSnapshot.listeningLanguage),
     customVoiceCommands: preferenceSnapshot.customVoiceCommands,
   });
   if (!addressed) return null;

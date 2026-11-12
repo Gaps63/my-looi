@@ -1,3 +1,4 @@
+import { toLocalCommandLanguage } from "../language/listening-language";
 import { recordDiagnosticEvent } from "../diagnostics/diagnostic-log";
 import {
   matchWakePhrase,
@@ -32,7 +33,7 @@ function languageCandidates(expectedId?: WakePhraseId): WhisperLanguageHint[] {
   // The listening-language toggle is authoritative. Wake recognition runs only
   // in the selected language; never add an automatic-language retry that can
   // stall the microphone for several seconds on every miss.
-  const selected = useUserStore.getState().preferences.listeningLanguage;
+  const selected = toLocalCommandLanguage(useUserStore.getState().preferences.listeningLanguage);
   return [selected];
 }
 

@@ -1,3 +1,4 @@
+import { toLocalCommandLanguage } from "../language/listening-language";
 import { enterRobotSleepMode } from "../core/sleep-mode";
 import { recordDiagnosticEvent } from "../diagnostics/diagnostic-log";
 import {
@@ -38,7 +39,7 @@ export function parseRealtimePhysicalCommand(
     robotName: preferences.robotName,
     robotAddressAliases: preferences.robotAddressAliases,
     robotAddressRecognitionAliases: preferences.robotAddressRecognitionAliases,
-    listeningLanguage: preferences.listeningLanguage,
+    listeningLanguage: toLocalCommandLanguage(preferences.listeningLanguage),
     customVoiceCommands: preferences.customVoiceCommands,
   };
   if (containsEmergencyStopWord(transcript, config)) return { kind: "emergency-stop" };

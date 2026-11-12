@@ -15,6 +15,7 @@ import { isMainScreenFocused } from "../core/main-screen-presence";
 import { useConversationStore } from "../store/conversation";
 import { isPcmRealtimeMode, useUserStore } from "../store/user";
 import { executeDiscEmotionTool } from "../disc/disc-reaction";
+import { getResponseLanguageName, isResponseLanguage } from "../language/response-language";
 import { kwsAudioFeeder } from "./kws-audio-feeder";
 import {
   activateRealtimeSpeakerRoute,
@@ -1494,19 +1495,17 @@ export class RealtimeConversationService {
         output = { ok: true, remembered: note };
       } else if (name === "set_language_preferences") {
         const responseLanguage = String(args.response_language ?? "").trim();
-        if (responseLanguage !== "ru" && responseLanguage !== "uk" && responseLanguage !== "en") {
-          throw new Error("response_language must be ru, uk, or en");
+        if (!isResponseLanguage(responseLanguage)) {
+          throw new Error("response_language must be ru, uk, en, fr, or ar");
         }
         const requestedListeningLanguage = args.listening_language == null
           ? null
           : String(args.listening_language).trim();
         if (
           requestedListeningLanguage !== null &&
-          requestedListeningLanguage !== "ru" &&
-          requestedListeningLanguage !== "uk" &&
-          requestedListeningLanguage !== "en"
+          !isResponseLanguage(requestedListeningLanguage)
         ) {
-          throw new Error("listening_language must be ru, uk, or en when provided");
+          throw new Error("listening_language must be ru, uk, en, fr, or ar when provided");
         }
 
         const before = useUserStore.getState().preferences;
@@ -1534,7 +1533,7 @@ export class RealtimeConversationService {
           ok: true,
           response_language: after.language,
           listening_language: after.listeningLanguage,
-          next_reply_language: after.language === "en" ? "English" : after.language === "uk" ? "Ukrainian" : "Russian",
+          next_reply_language: getResponseLanguageName(after.language),
           instruction: "Acknowledge the change and continue in next_reply_language.",
           persistent: true,
         };

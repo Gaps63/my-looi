@@ -1,4 +1,4 @@
-export type ResponseLanguage = "ru" | "uk" | "en";
+export type ResponseLanguage = "ru" | "uk" | "en" | "fr" | "ar";
 
 export const DEFAULT_RESPONSE_LANGUAGE: ResponseLanguage = "ru";
 
@@ -10,9 +10,11 @@ export const RESPONSE_LANGUAGE_OPTIONS: ReadonlyArray<{
   { id: "ru", shortLabel: "RU", label: "Русский" },
   { id: "uk", shortLabel: "UA", label: "Українська" },
   { id: "en", shortLabel: "EN", label: "English" },
+  { id: "fr", shortLabel: "FR", label: "Français" },
+  { id: "ar", shortLabel: "AR", label: "العربية" },
 ];
 
-const DIRECT_SWITCH_COMMAND_RE = /^(?:говори|разговаривай|отвечай|ответь|розмовляй|спілкуйся|відповідай|speak|talk|reply|respond)(?=$|\s)/u;
+const DIRECT_SWITCH_COMMAND_RE = /^(?:говори|разговаривай|отвечай|ответь|розмовляй|спілкуйся|відповідай|speak|talk|reply|respond|parle|parlez|r[ée]ponds|r[ée]pondez)(?=$|\s)/u;
 
 const POLITE_SWITCH_COMMAND_RE = /^(?:(?:можешь|можеш|чи\s+можеш|can\s+you|could\s+you)(?:\s+(?:пожалуйста|будь\s+ласка|please|теперь|відтепер|now))*\s+)(?:говорить|разговаривать|отвечать|говорити|спілкуватися|відповідати|speak|talk|reply|respond)(?=$|\s)/u;
 
@@ -26,6 +28,14 @@ const LANGUAGE_TARGETS: Array<{
   language: ResponseLanguage;
   pattern: RegExp;
 }> = [
+  {
+    language: "fr",
+    pattern: /^(?:(?:(?:язык(?:\s+ответов)?|мову(?:\s+відповідей)?|(?:response\s+)?language)\s+(?:на|to)\s+)?(?:французский(?:\s+язык)?|французьку(?:\s+мову)?|french)|по[-\s]?французски|in\s+french|to\s+french|en\s+fran[cç]ais|fran[cç]ais)(?:\s+(?:пожалуйста|будь\s+ласка|please|s'il\s+te\s+pla[iî]t))?$/u,
+  },
+  {
+    language: "ar",
+    pattern: /^(?:(?:(?:язык(?:\s+ответов)?|мову(?:\s+відповідей)?|(?:response\s+)?language)\s+(?:на|to)\s+)?(?:арабский(?:\s+язык)?|арабську(?:\s+мову)?|arabic)|по[-\s]?арабски|in\s+arabic|to\s+arabic|en\s+arabe|arabe)(?:\s+(?:пожалуйста|будь\s+ласка|please|s'il\s+te\s+pla[iî]t))?$/u,
+  },
   {
     language: "ru",
     pattern: /^(?:(?:(?:язык(?:\s+ответов)?|мову(?:\s+відповідей)?|(?:response\s+)?language)\s+(?:на|to)\s+)?(?:русский(?:\s+язык)?|російську(?:\s+мову)?|russian)|по[-\s]?русски|на\s+русском(?:\s+языке)?|на\s+русский(?:\s+язык)?|російською|на\s+російську(?:\s+мову)?|російська(?:\s+мова)?|in\s+russian|to\s+russian)(?:\s+(?:пожалуйста|будь\s+ласка|please))?$/u,
@@ -41,7 +51,7 @@ const LANGUAGE_TARGETS: Array<{
 ];
 
 export function normalizeResponseLanguage(value: unknown): ResponseLanguage {
-  return value === "uk" || value === "en" || value === "ru"
+  return value === "uk" || value === "en" || value === "ru" || value === "fr" || value === "ar"
     ? value
     : DEFAULT_RESPONSE_LANGUAGE;
 }
@@ -78,12 +88,22 @@ export function detectLanguageSwitchCommand(transcript: string): ResponseLanguag
 }
 
 export function getLanguageSwitchAcknowledgement(language: ResponseLanguage): string {
+  if (language === "fr") return "D'accord, je parle français.";
+  if (language === "ar") return "حسنًا، سأتحدث بالعربية.";
   if (language === "uk") return "Добре, говоритиму українською.";
   if (language === "en") return "Okay, I'll speak English.";
   return "Хорошо, буду говорить по-русски.";
 }
 
+export const SUPPORTED_CONVERSATION_LANGUAGES = ["ru", "uk", "en", "fr", "ar"] as const;
+
+export function isResponseLanguage(value: string): value is ResponseLanguage {
+  return (SUPPORTED_CONVERSATION_LANGUAGES as readonly string[]).includes(value);
+}
+
 export function getResponseLanguageName(language: ResponseLanguage): string {
+  if (language === "fr") return "French";
+  if (language === "ar") return "Arabic";
   if (language === "uk") return "Ukrainian";
   if (language === "en") return "English";
   return "Russian";

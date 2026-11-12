@@ -1,3 +1,4 @@
+import { toLocalCommandLanguage } from "../language/listening-language";
 import { recordDiagnosticEvent } from "../diagnostics/diagnostic-log";
 import { useUserStore } from "../store/user";
 import { parseDrivingCommandTranscript, type DrivingCommand } from "./driving-command";
@@ -119,7 +120,7 @@ class DrivingCommandFallback {
     try {
       const { sherpaVoiceAdapter } = await import("./sherpa-adapter");
       const language = useUserStore.getState().preferences.listeningLanguage;
-      const transcript = await sherpaVoiceAdapter.transcribeSamplesWithLanguage(samples, SAMPLE_RATE, language);
+      const transcript = await sherpaVoiceAdapter.transcribeSamplesWithLanguage(samples, SAMPLE_RATE, toLocalCommandLanguage(language));
       if (generation !== this.generation) return;
       const command = parseDrivingCommandTranscript(transcript, language);
       recordDiagnosticEvent("whisper", "driving-command-local", {

@@ -1,3 +1,4 @@
+import { toLocalCommandLanguage } from "../language/listening-language";
 import {
   AudioModule,
   requestRecordingPermissionsAsync,
@@ -178,7 +179,7 @@ export class STTService {
       const transcript = (await sherpaVoiceAdapter.transcribeSamplesWithLanguage(
         samples,
         sampleRate,
-        listeningLanguage
+        toLocalCommandLanguage(listeningLanguage)
       )).trim();
       if (externalSignal?.aborted) throw new Error("Voice turn interrupted");
       recordDiagnosticEvent("stt", "local-command-finished", {

@@ -31,6 +31,9 @@ const MODEL_ASSET_DIR: Record<ListeningLanguage, string> = {
   ru: "vosk-command-ru",
   uk: "vosk-command-uk",
   en: "vosk-command-en",
+  // No offline French/Arabic model: those listeners use the English command model.
+  fr: "vosk-command-en",
+  ar: "vosk-command-en",
 };
 
 const EMERGENCY_STOP_GRAMMAR: Record<ListeningLanguage, string[]> = {
@@ -45,6 +48,14 @@ const EMERGENCY_STOP_GRAMMAR: Record<ListeningLanguage, string[]> = {
     "stop", "halt", "brake", "freeze", "hold", "enough", "[unk]",
   ],
   en: [
+    "stop", "halt", "brake", "freeze", "hold", "enough", "stop moving", "stop now",
+    "стоп", "стой", "стій", "тормози", "гальмуй", "[unk]",
+  ],
+  fr: [
+    "stop", "halt", "brake", "freeze", "hold", "enough", "stop moving", "stop now",
+    "стоп", "стой", "стій", "тормози", "гальмуй", "[unk]",
+  ],
+  ar: [
     "stop", "halt", "brake", "freeze", "hold", "enough", "stop moving", "stop now",
     "стоп", "стой", "стій", "тормози", "гальмуй", "[unk]",
   ],

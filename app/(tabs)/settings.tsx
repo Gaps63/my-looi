@@ -20,7 +20,7 @@ import {
 } from "@/src/diagnostics/diagnostic-export";
 import { withExternalActivityLease } from "@/src/core/background-process-exit";
 import { RESPONSE_LANGUAGE_OPTIONS } from "@/src/language/response-language";
-import { LISTENING_LANGUAGE_OPTIONS } from "@/src/language/listening-language";
+import { LISTENING_LANGUAGE_OPTIONS, toLocalCommandLanguage } from "@/src/language/listening-language";
 import { INTERFACE_LANGUAGE_OPTIONS } from "@/src/i18n/ui-language";
 import { useUiText } from "@/src/i18n/use-ui-text";
 import { getLocalizedModelDownloadStage, getLocalizedVoiceDescription } from "@/src/i18n/ui-strings";
@@ -773,7 +773,7 @@ function VoiceCommandsSettings() {
   const { t } = useUiText();
   const [open, setOpen] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
-  const [draftLanguage, setDraftLanguage] = useState<VoiceCommandLanguage>(preferences.listeningLanguage);
+  const [draftLanguage, setDraftLanguage] = useState<VoiceCommandLanguage>(toLocalCommandLanguage(preferences.listeningLanguage));
   const [aliasDraft, setAliasDraft] = useState("");
   const [recognitionDraft, setRecognitionDraft] = useState("");
   const [recognitionExpanded, setRecognitionExpanded] = useState(false);
@@ -884,7 +884,7 @@ function VoiceCommandsSettings() {
         const phrases = preferences.customVoiceCommands[action];
         const expanded = open === action;
         return <View key={action}>
-          <DisclosureRow label={`${t(`settings.voiceAction.${action}` as any)} · ${phrases.length}`} expanded={expanded} onPress={() => { setOpen(expanded ? null : action); setDraft(""); setDraftLanguage(preferences.listeningLanguage); }} compact />
+          <DisclosureRow label={`${t(`settings.voiceAction.${action}` as any)} · ${phrases.length}`} expanded={expanded} onPress={() => { setOpen(expanded ? null : action); setDraft(""); setDraftLanguage(toLocalCommandLanguage(preferences.listeningLanguage)); }} compact />
           {expanded ? <View style={styles.disclosureBody}>
             <Text style={styles.help}>{action === "emergency_stop" ? t("settings.voiceCommandsEmergencyHelp") : t("settings.voiceCommandsAddressRequired", { name: preferences.robotName })}</Text>
             {phrases.map((phrase) => <View key={phrase.id} style={styles.phraseRow}><Text style={styles.value}>{phrase.text}</Text><Text style={styles.help}>{phrase.language.toUpperCase()}</Text><Pressable onPress={() => removePhrase(action, phrase.id)}><Text style={styles.deleteText}>×</Text></Pressable></View>)}
