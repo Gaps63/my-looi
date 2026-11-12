@@ -1,5 +1,22 @@
 import type { UserPreferences } from "../store/user";
 import { DEFAULT_REALTIME_MODEL_ID, normalizeRealtimeModelId, supportsRealtimeReasoning } from "../openai/realtime-models";
+import {
+  buildDiscDemoInstructions,
+  buildDiscDemoTools,
+  discTranscriptionLanguage,
+  normalizeDiscDemoSettings,
+  type DiscDemoSettings,
+} from "../disc/disc-demo";
+
+/** DISC stand-demo mode (fork addition): active only when explicitly enabled. */
+export function isDiscDemoActive(preferences: Partial<DiscDemoSettings>): boolean {
+  return preferences.discDemoEnabled === true;
+}
+
+function discDemoRobotName(robotName: string | undefined): string {
+  const name = robotName?.trim() ?? "";
+  return name.length >= 2 && !/[\u0400-\u04FF]/u.test(name) ? name : "LOOI";
+}
 
 export const REALTIME_MODEL = DEFAULT_REALTIME_MODEL_ID;
 export const REALTIME_PCM_RATE = 24_000;
@@ -110,28 +127,36 @@ function buildRealtimeTools(): Record<string, unknown>[] {
 }
 
 function buildRealtimeSessionBase(
-  preferences: Pick<UserPreferences, "language" | "listeningLanguage" | "realtimeModelId" | "ttsVoiceId" | "ttsSpeed" | "speechGender" | "robotName" | "robotAddressAliases" | "robotAddressRecognitionAliases">,
+  preferences: Pick<UserPreferences, "language" | "listeningLanguage" | "realtimeModelId" | "ttsVoiceId" | "ttsSpeed" | "speechGender" | "robotName" | "robotAddressAliases" | "robotAddressRecognitionAliases"> & Partial<DiscDemoSettings>,
   previousSummary?: string,
   memoryContext?: string
 ): Record<string, unknown> {
   const model = normalizeRealtimeModelId(preferences.realtimeModelId);
+  const discDemo = isDiscDemoActive(preferences);
   return {
     type: "realtime",
     model,
     ...(supportsRealtimeReasoning(model) ? { reasoning: { effort: "low" } } : {}),
     output_modalities: ["audio"],
-    instructions: buildRealtimeInstructions(preferences, previousSummary, memoryContext),
+    // DISC demo: own persona + knowledge base; no personal memory is injected.
+    instructions: discDemo
+      ? buildDiscDemoInstructions(normalizeDiscDemoSettings(preferences), discDemoRobotName(preferences.robotName))
+      : buildRealtimeInstructions(preferences, previousSummary, memoryContext),
     max_output_tokens: 768,
-    tools: buildRealtimeTools(),
+    tools: discDemo ? buildDiscDemoTools() : buildRealtimeTools(),
     tool_choice: "auto",
   };
 }
 
 export function buildRealtimeSessionUpdate(
-  preferences: Pick<UserPreferences, "language" | "listeningLanguage" | "realtimeModelId" | "ttsVoiceId" | "ttsSpeed" | "speechGender" | "robotName" | "robotAddressAliases" | "robotAddressRecognitionAliases">,
+  preferences: Pick<UserPreferences, "language" | "listeningLanguage" | "realtimeModelId" | "ttsVoiceId" | "ttsSpeed" | "speechGender" | "robotName" | "robotAddressAliases" | "robotAddressRecognitionAliases"> & Partial<DiscDemoSettings>,
   previousSummary?: string,
   memoryContext?: string
 ): Record<string, unknown> {
+  const discDemo = isDiscDemoActive(preferences);
+  const discLanguage = discDemo
+    ? discTranscriptionLanguage(normalizeDiscDemoSettings(preferences).discDemoLanguage)
+    : undefined;
   return {
     type: "session.update",
     session: {
@@ -142,8 +167,12 @@ export function buildRealtimeSessionUpdate(
           noise_reduction: { type: "far_field" },
           transcription: {
             model: "gpt-4o-mini-transcribe",
-            language: preferences.listeningLanguage,
-            prompt: `The user is speaking ${preferences.listeningLanguage === "uk" ? "Ukrainian" : preferences.listeningLanguage === "en" ? "English" : "Russian"}. Robot names/addresses and likely STT variants may include ${[preferences.robotName?.trim() || "Луи", ...(Array.isArray(preferences.robotAddressAliases) ? preferences.robotAddressAliases : []), ...(Array.isArray(preferences.robotAddressRecognitionAliases) ? preferences.robotAddressRecognitionAliases : []), "LOOI", "Луи", "Луї", "Бобик", "Макс", "Max", "Робот", "Robot"].join(", ")}. These tokens are vocative robot addresses, not evidence of the human user's name. Transcribe them as robot names/addresses and do not reinterpret them as the user's personal name.`,
+            ...(discDemo
+              ? (discLanguage ? { language: discLanguage } : {})
+              : { language: preferences.listeningLanguage }),
+            prompt: discDemo
+              ? `A trade-show visitor is talking to a small robot named ${discDemoRobotName(preferences.robotName)} (also LOOI or Robot) about colour profiles: Red, Blue, Yellow, Green, DISC. The visitor may speak English, French, Arabic or another language.`
+              : `The user is speaking ${preferences.listeningLanguage === "uk" ? "Ukrainian" : preferences.listeningLanguage === "en" ? "English" : "Russian"}. Robot names/addresses and likely STT variants may include ${[preferences.robotName?.trim() || "Луи", ...(Array.isArray(preferences.robotAddressAliases) ? preferences.robotAddressAliases : []), ...(Array.isArray(preferences.robotAddressRecognitionAliases) ? preferences.robotAddressRecognitionAliases : []), "LOOI", "Луи", "Луї", "Бобик", "Макс", "Max", "Робот", "Robot"].join(", ")}. These tokens are vocative robot addresses, not evidence of the human user's name. Transcribe them as robot names/addresses and do not reinterpret them as the user's personal name.`,
           },
           turn_detection: {
             type: "server_vad",

@@ -25,7 +25,7 @@ assert.equal(
   crypto.createHash("sha256")
     .update(read("src/voice/realtime-pcm-conversation.ts"))
     .digest("hex"),
-  "a22924f9c8e5da6e93bdf94e10a17a88bab43ccae732fb5fac82c19861313ced"
+  /* DISC fork: express_emotion tool + no memory preload (audio path unchanged; upstream a22924f9c8e5da6e93bdf94e10a17a88bab43ccae732fb5fac82c19861313ced) */ "2c6571205bfd818392386e8b9f3f1727e54a47b0dba18401f82bc3ebf573c3d9"
 );
 
 assert.equal(

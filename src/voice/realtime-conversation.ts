@@ -14,6 +14,7 @@ import { mirrorSessionMessage, mirrorSessionTouch } from "../memory/memory-servi
 import { isMainScreenFocused } from "../core/main-screen-presence";
 import { useConversationStore } from "../store/conversation";
 import { isPcmRealtimeMode, useUserStore } from "../store/user";
+import { executeDiscEmotionTool } from "../disc/disc-reaction";
 import { kwsAudioFeeder } from "./kws-audio-feeder";
 import {
   activateRealtimeSpeakerRoute,
@@ -1472,7 +1473,9 @@ export class RealtimeConversationService {
     let output: Record<string, unknown>;
     try {
       const args = item.arguments ? JSON.parse(String(item.arguments)) : {};
-      if (name === "search_memory") {
+      if (name === "express_emotion") {
+        output = executeDiscEmotionTool(args);
+      } else if (name === "search_memory") {
         const query = String(args.query ?? "").trim();
         if (!query) throw new Error("query is required");
         const results = (await localMemoryDatabase.search(query)).slice(0, 6).map((result) => ({

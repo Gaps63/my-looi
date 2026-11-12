@@ -12,6 +12,7 @@ import {
 } from "../openai/openai-api-key";
 import { useConversationStore } from "../store/conversation";
 import { useUserStore } from "../store/user";
+import { executeDiscEmotionTool } from "../disc/disc-reaction";
 import { captureExplicitLookHereStill } from "../vision/look-here";
 import { classifyOpenAiError, setOpenAiApiStatus } from "../openai/openai-api-status";
 import {
@@ -272,7 +273,10 @@ export class RealtimePcmConversationService {
       store.setActiveSession(localSessionId);
       mirrorSessionTouch(localSessionId, "realtime");
 
-      const { facts: ambientMemories, strategy: memoryStrategy } = await retrieveConversationMemories("", { mode: "ambient" });
+      // DISC stand demo: never load personal memories into a visitor session.
+      const { facts: ambientMemories, strategy: memoryStrategy } = useUserStore.getState().preferences.discDemoEnabled
+        ? { facts: [], strategy: "disc-demo-disabled" }
+        : await retrieveConversationMemories("", { mode: "ambient" });
       if (!this.active) return;
       const memoryContext = ambientMemories
         .map((memory) => `- ${memory.memory.trim()}`)
@@ -1039,7 +1043,9 @@ export class RealtimePcmConversationService {
     let output: Record<string, unknown>;
     try {
       const args = item.arguments ? JSON.parse(String(item.arguments)) : {};
-      if (name === "search_memory") {
+      if (name === "express_emotion") {
+        output = executeDiscEmotionTool(args);
+      } else if (name === "search_memory") {
         const query = String(args.query ?? "").trim();
         if (!query) throw new Error("query is required");
         const results = (await localMemoryDatabase.search(query)).slice(0, 6).map((result) => ({

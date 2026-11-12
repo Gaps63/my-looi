@@ -4,6 +4,7 @@ import Constants from "expo-constants";
 import { useFocusEffect } from "expo-router";
 
 import { DeviceShell } from "@/src/ui/DeviceShell";
+import { DiscDemoSettingsSection } from "@/src/disc/DiscDemoSettingsSection";
 import { looiTheme } from "@/src/ui/looi-theme";
 import { useUserStore, type ConversationMode, type CustomVoiceCommandAction, type FacePaletteId, type FaceStyleId, type VoiceCommandLanguage } from "@/src/store/user";
 import { voiceRuntime } from "@/src/perceivers/voice-runtime";
@@ -507,6 +508,8 @@ export default function SettingsScreen() {
         <Summary label={t("settings.summary.local")} value={sharedReady ? t("settings.summary.localReady") : t("settings.summary.localCheck")} ok={sharedReady} />
         <Summary label={t("settings.summary.robot")} value={robotRuntime.connected ? t("settings.summary.robotConnected") : robotUi.saved ? t("settings.summary.robotSaved") : t("settings.summary.robotNone")} ok={robotRuntime.connected} neutral={!robotRuntime.connected} />
       </View>
+
+      <DiscDemoSettingsSection />
 
       <Section title={t("settings.language")}>
         <Text style={styles.label}>{t("settings.interfaceLanguage")}</Text>

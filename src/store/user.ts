@@ -25,6 +25,11 @@ import {
   normalizeInterfaceLanguage,
   type InterfaceLanguage,
 } from "../i18n/ui-language";
+import {
+  DEFAULT_DISC_DEMO_SETTINGS,
+  normalizeDiscDemoSettings,
+  type DiscDemoSettings,
+} from "../disc/disc-demo";
 
 export type VoiceState =
   | "sleeping"
@@ -206,7 +211,7 @@ export type UserPreferences = {
   customVoiceCommands: CustomVoiceCommandMap;
   /** Selectable conversation transport. Older persisted values normalize to Realtime PCM. */
   conversationMode: ConversationMode;
-};
+} & DiscDemoSettings;
 
 interface UserState {
   /** User profile ID */
@@ -265,6 +270,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   robotAddressRecognitionAliases: ["Луй", "Луни", "Луі", "Уи", "Уй"],
   customVoiceCommands: EMPTY_CUSTOM_VOICE_COMMANDS,
   conversationMode: "realtime_pcm",
+  ...DEFAULT_DISC_DEMO_SETTINGS,
 };
 
 function loadPreferences(): UserPreferences {
@@ -330,6 +336,8 @@ function loadPreferences(): UserPreferences {
         const mode = (preferences as { conversationMode?: unknown }).conversationMode;
         return mode === "realtime" ? "realtime" : "realtime_pcm";
       })(),
+      // DISC stand demo settings (fork addition).
+      ...normalizeDiscDemoSettings(preferences as Partial<DiscDemoSettings>),
     };
     if (
       (preferences as Partial<UserPreferences>).interfaceLanguage !== normalized.interfaceLanguage ||

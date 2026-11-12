@@ -347,12 +347,15 @@ class VoskCommandRecognizerModule : Module() {
     val started = SystemClock.elapsedRealtime()
     val destination = File(context.filesDir, "vosk-command-models/$assetDir")
     val cached = destination.exists() && destination.list()?.isNotEmpty() == true
+    val copyStarted = SystemClock.elapsedRealtime()
 
     if (!cached) {
       destination.parentFile?.mkdirs()
       copyAssetTree(context.assets, assetDir, destination)
     }
+    val assetCopyMs = SystemClock.elapsedRealtime() - copyStarted
 
+    val modelStarted = SystemClock.elapsedRealtime()
     if (currentLanguage != language || currentAssetDir != assetDir || model == null) {
       closeRecognizer()
       model = Model(destination.absolutePath)
@@ -364,6 +367,8 @@ class VoskCommandRecognizerModule : Module() {
       emergencyRecognizer?.close()
       emergencyRecognizer = null
     }
+    val modelLoadMs = SystemClock.elapsedRealtime() - modelStarted
+    val recognizerStarted = SystemClock.elapsedRealtime()
 
     currentGrammar = grammarJson
     currentEmergencyGrammar = emergencyGrammarJson
@@ -383,6 +388,7 @@ class VoskCommandRecognizerModule : Module() {
       // partial. Keep finalization short for cases where only final text appears.
       it.setEndpointerDelays(3.0f, 0.12f, 3.0f)
     }
+    val recognizerCreateMs = SystemClock.elapsedRealtime() - recognizerStarted
     lastPartial = ""
     lastEmergencyPartial = ""
     lastEmergencyUnknownEventAtMs = 0L
@@ -403,6 +409,9 @@ class VoskCommandRecognizerModule : Module() {
         "language" to language,
         "assetDir" to assetDir,
         "loadMs" to (SystemClock.elapsedRealtime() - started),
+        "assetCopyMs" to assetCopyMs,
+        "modelLoadMs" to modelLoadMs,
+        "recognizerCreateMs" to recognizerCreateMs,
         "cached" to cached,
         "sessionId" to currentSessionId,
         "resetGeneration" to appliedResetGeneration
