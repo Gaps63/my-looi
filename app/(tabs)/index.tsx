@@ -55,6 +55,7 @@ export default function IndexScreen() {
   const robotSleeping = useUserStore((state) => state.robotSleeping);
   const listeningLanguage = useUserStore((state) => state.preferences.listeningLanguage);
   const responseLanguage = useUserStore((state) => state.preferences.language);
+  const discDemoEnabled = useUserStore((state) => state.preferences.discDemoEnabled);
   const updatePreferences = useUserStore((state) => state.updatePreferences);
   const { t } = useUiText();
 
@@ -292,8 +293,14 @@ export default function IndexScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`LOOI Robot: ${robotConnectionLabel}`}
-          disabled={robotConnectionMode === "connecting" || robotConnectionMode === "connected"}
-          onPress={() => void connectRobot()}
+          disabled={!discDemoEnabled && (robotConnectionMode === "connecting" || robotConnectionMode === "connected")}
+          onPress={() => {
+            if (robotConnectionMode === "connecting" || robotConnectionMode === "connected") return;
+            void connectRobot();
+          }}
+          // DISC demo: the settings gear is hidden; a 2-second press on this badge opens the settings.
+          delayLongPress={2000}
+          onLongPress={discDemoEnabled ? () => router.replace("/settings") : undefined}
           style={[
             styles.robotReconnectButton,
             robotConnectionMode === "connecting" && styles.robotReconnectButtonBusy,
@@ -310,6 +317,7 @@ export default function IndexScreen() {
           </Text>
         </Pressable>
       ) : null}
+      {!discDemoEnabled ? (
       <View style={styles.languagePicker}>
         <Pressable
           accessibilityRole="button"
@@ -383,6 +391,7 @@ export default function IndexScreen() {
           </View>
         ) : null}
       </View>
+      ) : null}
       <View style={styles.faceStage}>
         {repairStep ? (
           <Pressable
@@ -398,7 +407,7 @@ export default function IndexScreen() {
             <Text style={styles.repairText}>{t("home.repairModels")}</Text>
           </Pressable>
         ) : null}
-        {!robotSleeping ? (
+        {!robotSleeping && !discDemoEnabled ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t("home.choosePhotosA11y")}

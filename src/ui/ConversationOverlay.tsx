@@ -23,6 +23,7 @@ export function ConversationOverlay() {
   const realtimeReadiness = useConversationStore((state) => state.realtimeReadiness);
   const realtimeIssue = useConversationStore((state) => state.realtimeIssue);
   const conversationMode = useUserStore((state) => state.preferences.conversationMode);
+  const discDemoEnabled = useUserStore((state) => state.preferences.discDemoEnabled);
   const setOverlayVisible = useConversationStore((state) => state.setOverlayVisible);
   const { t } = useUiText();
   const opacity = useSharedValue(0);
@@ -66,6 +67,13 @@ export function ConversationOverlay() {
     realtimeIssue,
     t,
   });
+
+  // DISC demo: clean face screen. Only real problems (OpenAI key/credits,
+  // microphone, connection) are shown so the stand team can react.
+  const discDemoProblem = Boolean(realtimeIssue) ||
+    realtimeReadiness === "microphone-error" ||
+    realtimeReadiness === "error";
+  if (discDemoEnabled && !discDemoProblem) return null;
 
   return (
     <Animated.View pointerEvents="none" style={[styles.overlay, animatedStyle]}>
