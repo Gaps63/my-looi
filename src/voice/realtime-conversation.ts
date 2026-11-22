@@ -15,6 +15,7 @@ import { isMainScreenFocused } from "../core/main-screen-presence";
 import { useConversationStore } from "../store/conversation";
 import { isPcmRealtimeMode, useUserStore } from "../store/user";
 import { DISC_TOOL_NAMES, executeDiscReactionTool } from "../disc/disc-reaction";
+import { DISC_QUESTIONNAIRE_TOOL_NAMES, executeDiscQuestionnaireTool } from "../disc/disc-questionnaire-tools";
 import { getResponseLanguageName, isResponseLanguage } from "../language/response-language";
 import { kwsAudioFeeder } from "./kws-audio-feeder";
 import {
@@ -1476,6 +1477,8 @@ export class RealtimeConversationService {
       const args = item.arguments ? JSON.parse(String(item.arguments)) : {};
       if (DISC_TOOL_NAMES.has(name)) {
         output = executeDiscReactionTool(name, args);
+      } else if (DISC_QUESTIONNAIRE_TOOL_NAMES.has(name)) {
+        output = executeDiscQuestionnaireTool(name, args);
       } else if (name === "search_memory") {
         const query = String(args.query ?? "").trim();
         if (!query) throw new Error("query is required");

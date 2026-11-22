@@ -27,6 +27,7 @@ import {
 } from "../i18n/ui-language";
 import {
   DEFAULT_DISC_DEMO_SETTINGS,
+  discResponseLanguage,
   normalizeDiscDemoSettings,
   type DiscDemoSettings,
 } from "../disc/disc-demo";
@@ -336,9 +337,13 @@ function loadPreferences(): UserPreferences {
         const mode = (preferences as { conversationMode?: unknown }).conversationMode;
         return mode === "realtime" ? "realtime" : "realtime_pcm";
       })(),
-      // DISC stand demo settings (fork addition).
+      // DISC settings (fork addition).
       ...normalizeDiscDemoSettings(preferences as Partial<DiscDemoSettings>),
     };
+    // Single language setting (DISC language). Offline voice commands use the
+    // English model; local system messages follow the chosen language.
+    normalized.listeningLanguage = "en";
+    normalized.language = discResponseLanguage(normalized.discDemoLanguage);
     if (
       (preferences as Partial<UserPreferences>).interfaceLanguage !== normalized.interfaceLanguage ||
       (preferences as Partial<UserPreferences>).listeningLanguage !== normalized.listeningLanguage ||
@@ -400,6 +405,12 @@ export const useUserStore = create<UserState>((set) => ({
   updatePreferences: (prefs) =>
     set((state) => {
       const normalizedPrefs: Partial<UserState["preferences"]> = { ...prefs };
+      // Single DISC language setting drives the local language fields.
+      if (prefs.discDemoLanguage !== undefined) {
+        normalizedPrefs.language = discResponseLanguage(prefs.discDemoLanguage);
+        normalizedPrefs.listeningLanguage = "en";
+      }
+      delete normalizedPrefs.discDemoEnabled;
       const preferences = {
         ...state.preferences,
         ...normalizedPrefs,

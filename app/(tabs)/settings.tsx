@@ -511,14 +511,6 @@ export default function SettingsScreen() {
 
       <DiscDemoSettingsSection />
 
-      <Section title={t("settings.language")}>
-        <Text style={styles.label}>{t("settings.interfaceLanguage")}</Text>
-        <ButtonRow>{INTERFACE_LANGUAGE_OPTIONS.map((item) => <SmallChoice key={item.id} selected={preferences.interfaceLanguage === item.id} label={`${item.shortLabel} · ${item.label}`} onPress={() => updatePreferences({ interfaceLanguage: item.id })} />)}</ButtonRow>
-        <Text style={styles.label}>{t("settings.listeningLanguage")}</Text>
-        <ButtonRow>{LISTENING_LANGUAGE_OPTIONS.map((item) => <SmallChoice key={item.id} selected={preferences.listeningLanguage === item.id} label={item.shortLabel} onPress={() => updatePreferences({ listeningLanguage: item.id })} />)}</ButtonRow>
-        <Text style={styles.label}>{t("settings.responseLanguage")}</Text>
-        <ButtonRow>{RESPONSE_LANGUAGE_OPTIONS.map((item) => <SmallChoice key={item.id} selected={preferences.language === item.id} label={item.shortLabel} onPress={() => updatePreferences({ language: item.id })} />)}</ButtonRow>
-      </Section>
 
       <Section title="OpenAI">
         <Text style={styles.help}>{t("settings.openAiHelp")}</Text>

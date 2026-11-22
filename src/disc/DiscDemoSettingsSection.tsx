@@ -11,6 +11,8 @@ import {
   type DiscColor,
 } from "./disc-demo";
 import { resetDiscVerdict } from "./disc-verdict";
+import { findDiscProfile } from "./disc-profiles";
+import { resetDiscVisitor } from "./disc-questionnaire-tools";
 
 const SWATCH: Record<DiscColor, string> = {
   red: "#E5484D",
@@ -50,37 +52,41 @@ function ColorRow({
   );
 }
 
-/** Settings block for the DISC trade-show demo (fork addition). */
+/** DISC settings block (fork addition). */
 export function DiscDemoSettingsSection() {
   const { preferences, updatePreferences } = useUserStore();
-  const enabled = preferences.discDemoEnabled;
+  const testedProfile = findDiscProfile(preferences.discVisitorProfileCode);
+  const answeredCount = Object.keys(preferences.discQuestionnaireAnswers).length;
 
   // Opening the settings (e.g. between two visitors) puts the eyes back to white.
   useEffect(() => { resetDiscVerdict(); }, []);
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Démo DISC (salon)</Text>
+      <Text style={styles.sectionTitle}>Profil DISC</Text>
       <View style={styles.card}>
-        <Pressable onPress={() => updatePreferences({ discDemoEnabled: !enabled })} style={styles.switchRow}>
-          <Text style={styles.value}>Mode démo DISC</Text>
-          <Text style={[styles.pill, enabled && styles.pillOn]}>{enabled ? "ACTIVÉ" : "DÉSACTIVÉ"}</Text>
-        </Pressable>
         <Text style={styles.help}>
-          Activé : le robot joue le profil couleur choisi et n'utilise aucune mémoire personnelle. Ses yeux sont blancs par défaut,
-          deviennent verts quand on lui parle comme sa couleur l'aime et rouges quand on dit ce que sa couleur n'aime pas (10 s).
+          Le robot joue la couleur choisie, propose le test des 5 questions et réagit avec les yeux : blancs par défaut,
+          verts quand on lui parle comme sa couleur l'aime, rouges dans le cas contraire (10 s). Aucune mémoire personnelle.
           Les changements s'appliquent dès le retour sur l'écran du visage.
         </Text>
 
-        {enabled ? (
-          <>
+        <>
             <Text style={styles.label}>Couleur principale du robot</Text>
             <ColorRow value={preferences.discRobotPrimary} onChange={(color) => color && updatePreferences({ discRobotPrimary: color })} />
             <Text style={styles.label}>Couleur secondaire du robot</Text>
             <ColorRow allowNone value={preferences.discRobotSecondary} onChange={(color) => updatePreferences({ discRobotSecondary: color })} />
 
             <View style={styles.divider} />
-            <Text style={styles.label}>Visiteur — couleur principale</Text>
+            <Text style={styles.label}>Visiteur actuel</Text>
+            <Text style={styles.value}>
+              {testedProfile
+                ? `${testedProfile.name} (${DISC_COLOR_LABELS[testedProfile.color].fr}) — via le test`
+                : answeredCount > 0
+                  ? `Test en cours : ${answeredCount} / 5 réponses`
+                  : "Aucun profil (le robot proposera le test)"}
+            </Text>
+            <Text style={styles.label}>Saisie manuelle (secours) — couleur principale</Text>
             <ColorRow allowNone value={preferences.discVisitorPrimary} onChange={(color) => updatePreferences({ discVisitorPrimary: color })} />
             <Text style={styles.label}>Visiteur — couleur secondaire</Text>
             <ColorRow allowNone value={preferences.discVisitorSecondary} onChange={(color) => updatePreferences({ discVisitorSecondary: color })} />
@@ -94,17 +100,14 @@ export function DiscDemoSettingsSection() {
               style={[styles.input, styles.multiline]}
             />
             <Pressable
-              onPress={() => {
-                updatePreferences({ discVisitorPrimary: null, discVisitorSecondary: null, discVisitorNotes: "" });
-                resetDiscVerdict();
-              }}
+              onPress={() => resetDiscVisitor()}
               style={styles.action}
             >
-              <Text style={styles.actionText}>Nouveau visiteur (effacer le profil)</Text>
+              <Text style={styles.actionText}>Nouveau visiteur (effacer profil et test)</Text>
             </Pressable>
 
             <View style={styles.divider} />
-            <Text style={styles.label}>Langue de la démo</Text>
+            <Text style={styles.label}>Langue</Text>
             <View style={styles.row}>
               {DISC_LANGUAGE_OPTIONS.map((item) => (
                 <Pressable
@@ -133,8 +136,7 @@ export function DiscDemoSettingsSection() {
               style={[styles.input, styles.multilineLarge]}
             />
             <Text style={styles.help}>{preferences.discExtraInstructions.length} / {DISC_TEXT_LIMITS.extraInstructions} caractères. Le référentiel des couleurs est déjà intégré.</Text>
-          </>
-        ) : null}
+        </>
       </View>
     </View>
   );

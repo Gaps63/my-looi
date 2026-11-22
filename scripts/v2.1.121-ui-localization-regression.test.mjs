@@ -43,10 +43,10 @@ assert.match(strings, /"memory\.savedFacts"/);
 assert.match(strings, /getLocalizedModelDownloadStage/);
 
 const settings = read("app/(tabs)/settings.tsx");
-assert.match(settings, /INTERFACE_LANGUAGE_OPTIONS\.map/);
-assert.match(settings, /interfaceLanguage:\s*(?:item|option)\.id/);
-assert.match(settings, /LISTENING_LANGUAGE_OPTIONS\.map/);
-assert.match(settings, /RESPONSE_LANGUAGE_OPTIONS\.map/);
+// DISC fork: the language section was replaced by the single DISC language
+// setting (src/disc/DiscDemoSettingsSection.tsx).
+assert.match(settings, /<DiscDemoSettingsSection \/>/);
+assert.match(read("src/disc/DiscDemoSettingsSection.tsx"), /DISC_LANGUAGE_OPTIONS\.map/);
 assert.match(settings, /formatConversationCostPerMinute\(model\.id, interfaceLanguage\)/);
 
 const onboarding = read("app/onboarding.tsx");
