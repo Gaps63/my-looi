@@ -87,7 +87,6 @@ export function describeProfileForModel(profile: DiscProfile): Record<string, un
   return {
     code: profile.code,
     name_fr: profile.name,
-    colour: profile.color,
     summary_fr: profile.summary,
     likes_fr: profile.likes.map((like) => `${like.title} — ${like.detail}`),
   };

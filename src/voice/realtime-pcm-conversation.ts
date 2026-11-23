@@ -110,6 +110,8 @@ export class RealtimePcmConversationService {
   private pitchMode: "off" | "requested" = "off";
   /** A tool output was sent; the follow-up response.create waits for all tools and the current response. */
   private toolFollowUpPending = false;
+  /** wait_silently was called: end the turn without any spoken follow-up. */
+  private silentWaitPending = false;
   private toolCallsInFlight = 0;
   private localPhysicalCommandInFlight = false;
   private localVisualCommandInFlight = false;
@@ -868,6 +870,7 @@ export class RealtimePcmConversationService {
       const hasFunctionCall = Array.isArray(event.response?.output) &&
         event.response.output.some((item: any) => item?.type === "function_call");
       this.maybeRequestToolFollowUp();
+      await this.maybeFinishSilentWait();
       if (hasFunctionCall || this.toolCallsInFlight > 0) return;
       if (!this.playbackActive) await this.finalizeAssistantTurn();
       return;
@@ -1003,6 +1006,7 @@ export class RealtimePcmConversationService {
 
   private async finalizeAssistantTurn(): Promise<void> {
     if (!this.active) return;
+    this.silentWaitPending = false;
     if (this.pitchMode !== "off") this.exitPitchMode(this.playbackInterrupted ? "interrupted" : "completed");
     const transcript = this.assistantTranscript.trim();
     if (!this.playbackInterrupted && transcript) {
@@ -1059,6 +1063,8 @@ export class RealtimePcmConversationService {
     this.toolCallsInFlight += 1;
     const name = String(item.name ?? "");
     let output: Record<string, unknown>;
+    // wait_silently: the visitor is still thinking — no follow-up answer.
+    let silentTool = false;
     try {
       const args = item.arguments ? JSON.parse(String(item.arguments)) : {};
       if (DISC_TOOL_NAMES.has(name)) {
@@ -1068,6 +1074,9 @@ export class RealtimePcmConversationService {
       } else if (name === SMART_BRAIN_PITCH_TOOL) {
         output = executePitchTool(args);
         this.enterPitchMode();
+      } else if (name === "wait_silently") {
+        output = { ok: true, waiting: true };
+        silentTool = true;
       } else if (name === "search_memory") {
         const query = String(args.query ?? "").trim();
         if (!query) throw new Error("query is required");
@@ -1148,8 +1157,18 @@ export class RealtimePcmConversationService {
     // Several tools can be called in one response (e.g. react_to_visitor +
     // record_questionnaire_answer): ask for the follow-up only once, after all
     // tool outputs are sent and the current response is finished.
-    this.toolFollowUpPending = true;
+    if (silentTool) this.silentWaitPending = true;
+    else this.toolFollowUpPending = true;
     this.maybeRequestToolFollowUp();
+    await this.maybeFinishSilentWait();
+  }
+
+  /** Back to listening after wait_silently, once tools and the response are done. */
+  private async maybeFinishSilentWait(): Promise<void> {
+    if (!this.active || !this.silentWaitPending || this.toolFollowUpPending) return;
+    if (this.toolCallsInFlight > 0 || this.generationActive || this.playbackActive) return;
+    this.silentWaitPending = false;
+    await this.finalizeAssistantTurn();
   }
 
   private maybeRequestToolFollowUp(): void {

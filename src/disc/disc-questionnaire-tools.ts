@@ -54,7 +54,7 @@ export function executeDiscQuestionnaireTool(name: string, args: Record<string, 
       recorded: { question: questionNumber, choice },
       answered: Object.keys(answers).length,
       next_question: describeQuestionForModel(next),
-      instruction: "Ask this next question now, with its two options, translated into the visitor's language.",
+      instruction: "Ask this next question now: the question, then A and B, translated into the visitor's language. No comment on the previous answer, no reminder to answer A or B. Then stop talking and wait.",
     };
   }
 
@@ -71,6 +71,6 @@ export function executeDiscQuestionnaireTool(name: string, args: Record<string, 
     ok: true,
     test_complete: true,
     profile: describeProfileForModel(profile),
-    instruction: "Present this profile now as described in your instructions (name, colour, short summary, the two things it likes, then how your colour relates to theirs). Translate into the visitor's language. Never say the code.",
+    instruction: "Present this profile now as described in your instructions (name, short summary, the two things it likes, then in plain words how your way of being relates to theirs). Translate into the visitor's language. Never say the code and never mention any colour.",
   };
 }

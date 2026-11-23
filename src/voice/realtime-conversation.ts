@@ -1482,6 +1482,8 @@ export class RealtimeConversationService {
         output = executeDiscQuestionnaireTool(name, args);
       } else if (name === SMART_BRAIN_PITCH_TOOL) {
         output = executePitchTool(args);
+      } else if (name === "wait_silently") {
+        output = { ok: true, waiting: true };
       } else if (name === "search_memory") {
         const query = String(args.query ?? "").trim();
         if (!query) throw new Error("query is required");
