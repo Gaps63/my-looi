@@ -221,6 +221,8 @@ async function makeOpenAiHttpError(label: string, response: Response): Promise<s
 }
 
 function normalizeOpenAiApiKey(value: string | null | undefined): string | null {
-  const key = value?.trim();
+  // A key copied across several lines (or with spaces) breaks the HTTP
+  // Authorization header: API keys never contain whitespace, so drop it all.
+  const key = value?.replace(/\s+/g, "");
   return key || null;
 }

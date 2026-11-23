@@ -372,6 +372,9 @@ export class RealtimePcmConversationService {
         useConversationStore.getState().setRealtimeIssue(issue);
         useConversationStore.getState().setRealtimeReadiness("error");
         void setOpenAiApiStatus(issue, message);
+      } else {
+        // Clean face screen hides normal states: make start failures visible.
+        useConversationStore.getState().setRealtimeReadiness("error");
       }
       recordDiagnosticEvent("realtime", "pcm-session-start-failed", {
         error: message,
