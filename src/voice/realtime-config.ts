@@ -139,7 +139,8 @@ function buildRealtimeSessionBase(
     instructions: discDemo
       ? buildDiscDemoInstructions(normalizeDiscDemoSettings(preferences), discDemoRobotName(preferences.robotName))
       : buildRealtimeInstructions(preferences, previousSummary, memoryContext),
-    max_output_tokens: 768,
+    // DISC: profile presentations need longer answers than the original 768-token cap.
+    max_output_tokens: discDemo ? 4096 : 768,
     tools: discDemo ? buildDiscDemoTools() : buildRealtimeTools(),
     tool_choice: "auto",
   };
@@ -148,9 +149,11 @@ function buildRealtimeSessionBase(
 export function buildRealtimeSessionUpdate(
   preferences: Pick<UserPreferences, "language" | "listeningLanguage" | "realtimeModelId" | "ttsVoiceId" | "ttsSpeed" | "speechGender" | "robotName" | "robotAddressAliases" | "robotAddressRecognitionAliases"> & Partial<DiscDemoSettings>,
   previousSummary?: string,
-  memoryContext?: string
+  memoryContext?: string,
+  options: { pitchMode?: boolean } = {}
 ): Record<string, unknown> {
   const discDemo = isDiscDemoActive(preferences);
+  const pitchMode = discDemo && options.pitchMode === true;
   const discLanguage = discDemo
     ? discTranscriptionLanguage(normalizeDiscDemoSettings(preferences).discDemoLanguage)
     : undefined;
@@ -158,6 +161,7 @@ export function buildRealtimeSessionUpdate(
     type: "session.update",
     session: {
       ...buildRealtimeSessionBase(preferences, previousSummary, memoryContext),
+      ...(pitchMode ? { max_output_tokens: "inf" } : {}),
       audio: {
         input: {
           format: { type: "audio/pcm", rate: REALTIME_PCM_RATE },
@@ -179,11 +183,13 @@ export function buildRealtimeSessionUpdate(
             threshold: 0.15,
             prefix_padding_ms: 500,
             silence_duration_ms: 1000,
-            create_response: true,
+            // Smart Brain pitch: audience noise must neither cut the pitch nor
+            // trigger new answers while it plays (restored right after).
+            create_response: !pitchMode,
             // WebRTC keeps the microphone live while model audio plays. OpenAI
             // can therefore cancel/truncate the remote output when the user
             // starts talking. Actual device AEC quality is verified physically.
-            interrupt_response: true,
+            interrupt_response: !pitchMode,
           },
         },
         output: {

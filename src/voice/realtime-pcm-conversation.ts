@@ -14,6 +14,7 @@ import { useConversationStore } from "../store/conversation";
 import { useUserStore } from "../store/user";
 import { DISC_TOOL_NAMES, executeDiscReactionTool } from "../disc/disc-reaction";
 import { DISC_QUESTIONNAIRE_TOOL_NAMES, executeDiscQuestionnaireTool } from "../disc/disc-questionnaire-tools";
+import { SMART_BRAIN_PITCH_TOOL, executePitchTool } from "../disc/disc-pitch";
 import { getResponseLanguageName, isResponseLanguage } from "../language/response-language";
 import { captureExplicitLookHereStill } from "../vision/look-here";
 import { classifyOpenAiError, setOpenAiApiStatus } from "../openai/openai-api-status";
@@ -105,6 +106,10 @@ export class RealtimePcmConversationService {
   private assistantTranscript = "";
   private userTranscriptItems = new Set<string>();
   private handledToolCalls = new Set<string>();
+  /** Smart Brain pitch: "requested" from the tool call until the pitch response ends. */
+  private pitchMode: "off" | "requested" = "off";
+  /** A tool output was sent; the follow-up response.create waits for all tools and the current response. */
+  private toolFollowUpPending = false;
   private toolCallsInFlight = 0;
   private localPhysicalCommandInFlight = false;
   private localVisualCommandInFlight = false;
@@ -764,6 +769,11 @@ export class RealtimePcmConversationService {
       return;
     }
     if (type === "input_audio_buffer.speech_started") {
+      if (this.pitchMode !== "off") {
+        // Audience noise during the pitch: keep speaking.
+        recordDiagnosticEvent("realtime", "pcm-pitch-noise-ignored");
+        return;
+      }
       markRobotInteraction("realtime-pcm-speech-start");
       const duringOutput = this.playbackActive;
       if (duringOutput) {
@@ -786,6 +796,7 @@ export class RealtimePcmConversationService {
       return;
     }
     if (type === "input_audio_buffer.speech_stopped") {
+      if (this.pitchMode !== "off") return;
       const store = useConversationStore.getState();
       store.setUserSpeaking(false);
       store.setListening(false);
@@ -853,6 +864,7 @@ export class RealtimePcmConversationService {
       if (this.localPhysicalCommandInFlight || this.localVisualCommandInFlight) return;
       const hasFunctionCall = Array.isArray(event.response?.output) &&
         event.response.output.some((item: any) => item?.type === "function_call");
+      this.maybeRequestToolFollowUp();
       if (hasFunctionCall || this.toolCallsInFlight > 0) return;
       if (!this.playbackActive) await this.finalizeAssistantTurn();
       return;
@@ -988,6 +1000,7 @@ export class RealtimePcmConversationService {
 
   private async finalizeAssistantTurn(): Promise<void> {
     if (!this.active) return;
+    if (this.pitchMode !== "off") this.exitPitchMode(this.playbackInterrupted ? "interrupted" : "completed");
     const transcript = this.assistantTranscript.trim();
     if (!this.playbackInterrupted && transcript) {
       const store = useConversationStore.getState();
@@ -1049,6 +1062,9 @@ export class RealtimePcmConversationService {
         output = executeDiscReactionTool(name, args);
       } else if (DISC_QUESTIONNAIRE_TOOL_NAMES.has(name)) {
         output = executeDiscQuestionnaireTool(name, args);
+      } else if (name === SMART_BRAIN_PITCH_TOOL) {
+        output = executePitchTool(args);
+        this.enterPitchMode();
       } else if (name === "search_memory") {
         const query = String(args.query ?? "").trim();
         if (!query) throw new Error("query is required");
@@ -1126,7 +1142,35 @@ export class RealtimePcmConversationService {
       type: "conversation.item.create",
       item: { type: "function_call_output", call_id: callId, output: JSON.stringify(output) },
     });
-    this.send({ type: "response.create" });
+    // Several tools can be called in one response (e.g. react_to_visitor +
+    // record_questionnaire_answer): ask for the follow-up only once, after all
+    // tool outputs are sent and the current response is finished.
+    this.toolFollowUpPending = true;
+    this.maybeRequestToolFollowUp();
+  }
+
+  private maybeRequestToolFollowUp(): void {
+    if (!this.active || !this.toolFollowUpPending || this.toolCallsInFlight > 0 || this.generationActive) return;
+    this.toolFollowUpPending = false;
+    this.send(this.pitchMode === "requested"
+      ? { type: "response.create", response: { max_output_tokens: "inf" } }
+      : { type: "response.create" });
+  }
+
+  private enterPitchMode(): void {
+    this.pitchMode = "requested";
+    const preferences = useUserStore.getState().preferences;
+    this.send(buildRealtimeSessionUpdate(preferences, undefined, this.sessionMemoryContext, { pitchMode: true }));
+    recordDiagnosticEvent("realtime", "pcm-pitch-start");
+  }
+
+  private exitPitchMode(reason: string): void {
+    if (this.pitchMode === "off") return;
+    this.pitchMode = "off";
+    // Drop audience noise captured during the pitch, then restore normal turn-taking.
+    this.send({ type: "input_audio_buffer.clear" });
+    this.applySessionPreferences("pitch-finished");
+    recordDiagnosticEvent("realtime", "pcm-pitch-end", { reason });
   }
 
   private send(event: Record<string, unknown>): void {

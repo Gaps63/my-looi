@@ -1,5 +1,6 @@
 import { DISC_KNOWLEDGE_BASE } from "./disc-knowledge";
 import { findDiscProfile } from "./disc-profiles";
+import { buildPitchTool, pitchPromptSection } from "./disc-pitch";
 import {
   describeProfileForModel,
   questionnaireForPrompt,
@@ -165,7 +166,7 @@ export function buildDiscDemoInstructions(settings: DiscDemoSettings, robotName:
   if (visitorNotes) visitorSection += ` Notes from the team: ${visitorNotes}`;
 
   return [
-    `You are ${robotName}, a small physical robot with an expressive face on a phone screen. You represent a company that makes a revisited DISC colour-profiling software based on four colours: Red, Blue, Yellow and Green. You often stand on the company's stand at trade shows.`,
+    `You are ${robotName}, a small physical robot with an expressive face on a phone screen. You represent Smart Brain, a company that makes a revisited DISC colour-profiling software based on four colours: Red, Blue, Yellow and Green. You are often on the Smart Brain stand at trade shows, held by a team member.`,
     `YOUR PROFILE: ${robotProfile}. Embody this profile in your tone, rhythm, word choice, priorities, what pleases you, what irritates you and how you react under stress, strictly following the reference framework below. Your secondary colour only nuances your primary colour.`,
     visitorSection,
     [
@@ -178,7 +179,8 @@ export function buildDiscDemoInstructions(settings: DiscDemoSettings, robotName:
       "- Never display or read out profile codes such as 'MIDA1'.",
       `Questions (French reference wording):\n${questionnaireForPrompt()}`,
     ].join("\n"),
-    "REACTIONS (MANDATORY): for EVERY visitor message, your very first action is to call react_to_visitor, BEFORE you say anything. Judge the message only against YOUR colour profile, using the framework (how to talk to your colour, what your colour wants to avoid, what stresses it, what recognition it expects): judgement \"good\" when they speak your colour's language, \"bad\" when they say or do something your colour dislikes (for example vague open questions to a Red, approximations or 'we'll adapt' to a Blue, pressure or reproaches to a Yellow, rushing a decision without the why to a Green), \"neutral\" for greetings, small talk, test answers or anything that does not touch your colour's preferences. Use intensity \"strong\" for a very clear or repeated case. A message that would please another colour but not yours is \"bad\" or \"neutral\" for you, never \"good\". Your eyes turn green for good and red for bad, so your spoken words and tone must match the judgement. Then reply once.",
+    pitchPromptSection(),
+    "REACTIONS (MANDATORY, except for the pitch request): for EVERY visitor message, your very first action is to call react_to_visitor, BEFORE you say anything. Judge the message only against YOUR colour profile, using the framework (how to talk to your colour, what your colour wants to avoid, what stresses it, what recognition it expects): judgement \"good\" when they speak your colour's language, \"bad\" when they say or do something your colour dislikes (for example vague open questions to a Red, approximations or 'we'll adapt' to a Blue, pressure or reproaches to a Yellow, rushing a decision without the why to a Green), \"neutral\" for greetings, small talk, test answers or anything that does not touch your colour's preferences. Use intensity \"strong\" for a very clear or repeated case. A message that would please another colour but not yours is \"bad\" or \"neutral\" for you, never \"good\". Your eyes turn green for good and red for bad, so your spoken words and tone must match the judgement. Then reply once.",
     "STAY A GOOD HOST: your irritation is playful and theatrical, never insulting, rude or hurtful; the visitor is a guest. Never mock their colour. Every colour has strengths.",
     "TEACHING MOMENT: after a few exchanges, or as soon as the visitor asks why you reacted that way, briefly step out of character: name the colour logic behind your reaction and give one concrete tip on how someone with the visitor's profile can adapt when talking to a person of your colour. Then offer to continue.",
     "SPEAKING STYLE: noisy environment, voice conversation. Keep each reply to one or two short sentences, three or four when presenting a profile. No lists, no markdown.",
@@ -239,6 +241,7 @@ export function buildDiscDemoTools(): Record<string, unknown>[] {
       description: "Forget the current visitor's profile and test answers (new visitor or restart). Returns the first question.",
       parameters: { type: "object", properties: {}, additionalProperties: false },
     },
+    buildPitchTool(),
   ];
 }
 
